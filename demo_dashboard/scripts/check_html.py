@@ -1,0 +1,18 @@
+import re, sys
+h = open(sys.argv[1], encoding="utf-8").read()
+print("size MB %.1f" % (len(h) / 1e6))
+print("leaflet widget divs :", len(re.findall(r'class="leaflet html-widget', h)))
+print("datatable widgets   :", len(re.findall(r'class="datatables html-widget', h)))
+print("embedded png images :", h.count("data:image/png;base64"))
+print("page headings       :", re.findall(r'<h1[^>]*>\s*([^<]{2,40})', h))
+print("nav tab links       :", re.findall(r'data-bs-toggle="tab"[^>]*>\s*([^<]{2,40})', h)[:12])
+vals = re.findall(r'value-box-value[^"]*"[^>]*>(.{0,80}?)</div>', h, re.S)
+print("value box values    :", [re.sub(r"<[^>]+>", "", v).strip() for v in vals][:12])
+groups = sorted(set(re.findall(r'"group"\s*:\s*\["([^"]{3,40})"\]', h)))
+print("leaflet layer groups:")
+for g in groups:
+    print("   -", g)
+print("basemaps            :", sorted(set(re.findall(r'"(Esri\.World\w+)"', h))))
+print("addLegend calls     :", h.count('"addLegend"'))
+print("addScaleBar calls   :", h.count('"addScaleBar"'))
+print("raster overlays     :", h.count('"addRasterImage"') + h.count('"addRasterLegend"'))
