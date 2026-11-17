@@ -19,14 +19,20 @@ execute:
 
 ```{r setup}
 suppressPackageStartupMessages({
-  library(readr); library(leaflet); library(DT); library(htmltools)
+  # Load dependencies in directly
+  library(readr); library(dplyr); library(terra); library(sf)
+  library(leaflet); library(DT); library(htmltools); library(tidyr)
+  library(ggplot2); library(scales)
 })
 source("R/panels.R")   # shared palettes, theme and plot builders
 
+# Load in data
 bh  <- read_csv("data/bethel_boreholes.csv", show_col_types = FALSE) |>
+  # Configure binary label for permafrost visibility
   mutate(across(c(permafrost, talik, visible_ice, massive_ice),
                 ~factor(.x, levels = c("Yes", "No"))))
 
+# Load geospatial objects for mapping
 dtm_w    <- rast("data/msgc_dtm_1m_web.tif")
 relief_w <- rast("data/msgc_relief_1m_web.tif")
 hs_w     <- rast("data/msgc_hillshade_1m_web.tif")
@@ -59,7 +65,7 @@ prof_line <- st_sfc(st_linestring(cbind(range(prof$x),
 
 #  Overview
 
-## Row {height="18%"}
+## Row {.flow}
 
 ::: {.card title="Researchers and farmers working together to understand permafrost-agriculture interactions"}
 Permafrost Grown works with farmers in Alaska to understand how permafrost and
@@ -77,25 +83,25 @@ explorable - pan, zoom, switch layers and search the records yourself.
 ```{r}
 #| content: valuebox
 #| title: "Thaw subsidence measured by drone, 2017-2023"
-list(icon = "arrow-down-circle", color = "#1b5e4b", value = "up to 1.5 m")
+list(icon = "arrow-down-circle", color = "primary", value = "up to 1.5 m")
 ```
 
 ```{r}
 #| content: valuebox
 #| title: "Bethel borehole records synthesised"
-list(icon = "list-columns", color = "#4a6fa5", value = n_bh)
+list(icon = "list-columns", color = "secondary", value = n_bh)
 ```
 
 ```{r}
 #| content: valuebox
 #| title: "Boreholes that reached permafrost"
-list(icon = "snow", color = "#6b8fb3", value = n_pf)
+list(icon = "snow", color = "info", value = n_pf)
 ```
 
 ```{r}
 #| content: valuebox
 #| title: "Project year, of five"
-list(icon = "calendar3", color = "#c9892b", value = "3")
+list(icon = "calendar3", color = "warning", value = "3")
 ```
 
 ## Row {height="62%"}
@@ -113,8 +119,8 @@ sites <- data.frame(
 
 leaflet(sites, options = leafletOptions(minZoom = 3)) |>
   addProviderTiles("Esri.WorldTopoMap") |>
-  addCircleMarkers(~lon, ~lat, radius = 9, color = "#1b5e4b", weight = 2,
-                   fillColor = "#c9892b", fillOpacity = .9,
+  addCircleMarkers(~lon, ~lat, radius = 9, color = PG_GREEN, weight = 2,
+                   fillColor = PG_GOLD, fillOpacity = .9,
                    label = ~name,
                    popup = ~paste0("<b>", name, "</b><br>", lab)) |>
   setView(lng = -153, lat = 63.3, zoom = 4) |>
@@ -124,7 +130,7 @@ leaflet(sites, options = leafletOptions(minZoom = 3)) |>
 ### Column {width="45%"}
 
 ::: {.card title="What is on this dashboard"}
-::: {.lead-note}
+::: {.callout-tip appearance="simple" icon=false}
 **Using drones to monitor thaw subsidence** - 3D digital surface models let the team
 track how much the land has lowered as ground ice melts. Up to **1.5 m (about 5 feet)**
 of thaw subsidence occurred between 2017 and 2023 at a site first cleared for
@@ -132,14 +138,14 @@ agriculture and cultivated until it was abandoned and converted into a golf cour
 Permafrost can keep degrading, with active thaw subsidence, long after cultivation stops.
 :::
 
-::: {.lead-note}
+::: {.callout-tip appearance="simple" icon=false}
 **Discovery of ice wedges in the Bethel area** - near-surface permafrost information
 was synthesised from archived geotechnical reports, together with boreholes the team
 drilled in 2023 and 2024. That drilling found **wedge ice**, a type of massive ground
 ice not previously described in the Yukon-Kuskokwim Delta.
 :::
 
-::: {.lead-note}
+::: {.callout-tip appearance="simple" icon=false}
 **Engaging farmers** - interviews, on-farm engagement, annual surveys, focus groups
 and workshops bring farmers and researchers together to generate new knowledge about
 permafrost-agroecosystems.
@@ -148,7 +154,7 @@ permafrost-agroecosystems.
 
 #  Thaw subsidence
 
-## Row {height="8%"}
+## Row {.flow}
 
 ::: {.card}
 **Using drones to monitor thaw subsidence - Midnight Sun Golf Course, Fairbanks.**
@@ -159,8 +165,8 @@ clearing contributed to that change in land use.
 
 ## Row {height="62%"}
 
+::: {.card title="2023 drone lidar - ground surface and thaw features"}
 ```{r}
-#| title: "2023 drone lidar - ground surface and thaw features"
 ext_ll <- st_bbox(foot)
 
 hs_pal  <- colorNumeric(grey.colors(64, start = .15, end = .97), domain = NULL,
@@ -184,7 +190,7 @@ leaflet() |>
                  group = "Ground elevation") |>
   addPolygons(data = foot, fill = FALSE, color = "#7a5a18", weight = 1.5,
               dashArray = "4 4", group = "Drone survey coverage") |>
-  addPolylines(data = prof_line, color = "#c9892b", weight = 4, opacity = .95,
+  addPolylines(data = prof_line, color = PG_GOLD, weight = 4, opacity = .95,
                group = "Profile line",
                label = "Ground profile shown below") |>
   addLegend(position = "bottomright", pal = rel_pal, values = rel_rng,
@@ -201,7 +207,7 @@ leaflet() |>
   addScaleBar(position = "bottomleft")
 ```
 
-::: {.source-note}
+::: {.small .text-muted}
 Source: Midnight Sun Golf Course classified lidar point cloud, digital surface model,
 digital terrain model and orthophoto mosaic, 10 September 2023
 ([doi:10.18739/A2W37KX40](https://doi.org/10.18739/A2W37KX40)).
@@ -210,6 +216,7 @@ digital terrain model; blue tones mark ground sitting below the local average su
 the pits, troughs and collapsed hollows that thawing ground ice leaves behind.
 The 2017-2023 change map in the printed Year 3 highlights uses an earlier borough lidar
 survey that is not part of this dataset and is not reproduced here.
+:::
 :::
 
 ## Row {height="30%"}
@@ -224,10 +231,10 @@ profile_plot(prof)
 ### Column {width="45%"}
 
 ::: {.card title="What this means on the ground"}
-::: {.so-what}
+::: {.callout-warning appearance="simple" icon=false}
 **For farmers** - lorem ipsum
 :::
-::: {.so-what}
+::: {.callout-warning appearance="simple" icon=false}
 **For planners** - lorem ipsum
 :::
 
@@ -241,7 +248,7 @@ cat(sprintf(
 
 #  Bethel ice wedges
 
-## Row {height="8%"}
+## Row {.flow}
 
 ::: {.card}
 **Discovery of ice wedges in the Bethel area.** Bethel sits in a zone of discontinuous
@@ -257,35 +264,35 @@ Yukon-Kuskokwim Delta.
 ```{r}
 #| content: valuebox
 #| title: "Borehole records in the geospatial database"
-list(icon = "database", color = "#1b5e4b", value = n_bh)
+list(icon = "database", color = "primary", value = n_bh)
 ```
 
 ```{r}
 #| content: valuebox
 #| title: "Permafrost reported"
-list(icon = "snow2", color = "#4a6fa5",
+list(icon = "snow2", color = "secondary",
      value = sprintf("%d (%.0f%%)", n_pf, 100 * n_pf / n_bh))
 ```
 
 ```{r}
 #| content: valuebox
 #| title: "Visible ground ice reported"
-list(icon = "droplet", color = "#6b8fb3",
+list(icon = "droplet", color = "info",
      value = sprintf("%d (%.0f%%)", n_vis, 100 * n_vis / n_bh))
 ```
 
 ```{r}
 #| content: valuebox
 #| title: "Median depth to frozen ground"
-list(icon = "rulers", color = "#c9892b", value = sprintf("%.1f m", pf_top_med))
+list(icon = "rulers", color = "warning", value = sprintf("%.1f m", pf_top_med))
 ```
 
 ## Row {height="72%"}
 
 ### Column {width="58%"}
 
+::: {.card title="Near-surface permafrost from Bethel geotechnical boreholes"}
 ```{r}
-#| title: "Near-surface permafrost from Bethel geotechnical boreholes"
 popup_txt <- paste0(
   "<b>", bh$site_id, "</b><br>",
   "Borehole: ", bh$borehole_id, "<br>",
@@ -327,10 +334,11 @@ m |>
   addScaleBar(position = "bottomleft")
 ```
 
-::: {.source-note}
+::: {.small .text-muted}
 Source: Synthesis of near-surface permafrost borehole information from Bethel
 geotechnical reports ([doi:10.18739/A2P55DJ80](https://doi.org/10.18739/A2P55DJ80)).
 Tick one indicator at a time in the layer box; click any borehole for its full record.
+:::
 :::
 
 ### Column {width="42%"}
@@ -345,7 +353,7 @@ indicator_plot(bh)
 depth_plot(bh)
 ```
 
-::: {.so-what}
+::: {.callout-warning appearance="simple" icon=false}
 **Why ice wedges matter** - wedge ice is a body of nearly pure ice in the ground. When it
 thaws, the surface above it collapses into troughs and ponds rather than settling evenly.
 Knowing where it occurs changes where you would site a building pad, a road, a utility
@@ -356,8 +364,8 @@ run or a field.
 
 ## Row
 
+::: {.card title="All Bethel borehole records - search, sort and download"}
 ```{r}
-#| title: "All Bethel borehole records - search, sort and download"
 tbl <- bh |>
   transmute(`Site ID` = site_id,
             Borehole = borehole_id,
@@ -384,10 +392,11 @@ datatable(tbl, rownames = FALSE, filter = "top",
               backgroundColor = styleEqual(c("Yes", "No"), c("#f9d9b8", "#f5f5f5")))
 ```
 
-::: {.source-note}
+::: {.small .text-muted}
 "Base of frozen ground not reached" marks logs where the driller was still in frozen
 ground at the bottom of the hole, so the permafrost is at least as thick as the hole is
 deep. Blank depth cells are records where the original report gave no value.
+:::
 :::
 
 #  Working with farmers
@@ -420,16 +429,16 @@ recommendations.
 ### Column {width="48%"}
 
 ::: {.card title="Putting it to work"}
-::: {.so-what}
+::: {.callout-warning appearance="simple" icon=false}
 **Before you clear land** - ice content below the surface, not the vegetation on top,
 decides how the ground will behave afterwards. A few boreholes or a ground-penetrating
 radar line is far cheaper than regrading a settled field.
 :::
-::: {.so-what}
+::: {.callout-warning appearance="simple" icon=false}
 **After clearing** - settling continues for years. Plan drainage for a surface that will
 keep changing shape, and re-survey periodically rather than once.
 :::
-::: {.so-what}
+::: {.callout-warning appearance="simple" icon=false}
 **For local government** - the same measurements that help a farm plan a field help a
 borough plan a road alignment, a gravel pad or a utility corridor. Both datasets behind
 this dashboard are openly licensed and can be loaded straight into GIS software.
@@ -496,7 +505,7 @@ notes <- data.frame(
 knitr::kable(notes)
 ```
 
-::: {.source-note}
+::: {.small .text-muted}
 The printed Year 3 highlights show a 2017-2023 elevation-difference map built by
 differencing borough lidar flown in 2017 against the 2023 drone survey. The 2017 survey
 is not part of the published dataset, so this dashboard shows the 2023 surface and its
